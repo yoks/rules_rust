@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 
 # Enumerates the list of expected downloadable files, loads the SHAs for each file, then
-# dumps the result to stdout
+# dumps the result to //rust:known_shas.bzl
 #
-# SHould be run from workspace root.
+# Should be run from workspace root.
 
 TOOLS="$(cat ./util/fetch_shas_TOOLS.txt)"
 TARGETS="$(cat ./util/fetch_shas_TARGETS.txt)"
@@ -40,9 +40,9 @@ emit_bzl_file_contents() {
     | sed "s/,//g" \
     > /tmp/reload_shas_shalist.txt
 
-  echo "# This is a generated file -- see util/fetch_shas.sh"
+  echo "# This is a generated file -- see //util:fetch_shas.sh"
   echo "FILE_KEY_TO_SHA = {"
-  cat /tmp/reload_shas_shalist.txt | sort | awk '{print "   \"" $1 "\": \"" $2 "\","}'
+  cat /tmp/reload_shas_shalist.txt | sort | awk '{print "    \"" $1 "\": \"" $2 "\","}'
   echo "}"
 }
 
