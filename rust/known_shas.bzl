@@ -1,0 +1,21 @@
+# This is a generated file -- see util/fetch_shas.sh
+FILE_KEY_TO_SHA = {
+    "2018-06-29/rust-beta-x86_64-apple-darwin": "1fd2d96ca0d80a22954d07e14ae8667316b41617070db63b0be12a891cfb227c",
+    "2018-06-29/rust-beta-x86_64-unknown-freebsd": "882ede2c99840ba9578633264164f429f4a35eb3bde26cd0a24a11d3ad8dbad3",
+    "2018-06-29/rust-beta-x86_64-unknown-linux-gnu": "5040c7d43bc27b6ff82256d0d584d65c75674272c3be46af2131b84047e5417f",
+    "2018-06-29/rust-nightly-x86_64-apple-darwin": "d63f6e7d3d290a64ea5ec73b7f360d1493f9c9e85dfbe21ff5d09dedd4d930d8",
+    "2018-06-29/rust-nightly-x86_64-unknown-freebsd": "b916bbd0e2f4e545337ca7d2dc66763c9a7de208319d16ef7f8d09c4f1609128",
+    "2018-06-29/rust-nightly-x86_64-unknown-linux-gnu": "2f9c06fdf3eb1073dd427b0d4e10b9fd3a3f82fbf4fa14a75916e930dc9551c8",
+    "rust-1.26.0-x86_64-apple-darwin": "38708803c3096b8f101d1919ee2d7e723b0adf1bc1bb986b060973b57d8c7c28",
+    "rust-1.26.0-x86_64-unknown-freebsd": "a03cbe097670042c90d18654fbc852c9d473261d61c03d0f745bbaee759780ed",
+    "rust-1.26.0-x86_64-unknown-linux-gnu": "13691d7782577fc9f110924b26603ade1990de0b691a3ce2dc324b4a72a64a68",
+    "rust-1.26.1-x86_64-apple-darwin": "ebf898b9fa7e2aafc53682a41f18af5ca6660ebe82dd78f28cd9799fe4dc189a",
+    "rust-1.26.1-x86_64-unknown-freebsd": "910128f60c680e175ae93722272f491c6835f27652f9f3fe415dc0d9c482e204",
+    "rust-1.26.1-x86_64-unknown-linux-gnu": "b7e964bace1286696d511c287b945f3ece476ba77a231f0c31f1867dfa5080e0",
+    "rust-1.26.2-x86_64-apple-darwin": "f193705d4c0572a358670dbacbf0ffadcd04b3989728b442f4680fa1e065fa72",
+    "rust-1.26.2-x86_64-unknown-freebsd": "0ad985cf36b3946f086fd3c3c6eb97b0c94b24285147a04da22c00d4d522727a",
+    "rust-1.26.2-x86_64-unknown-linux-gnu": "d2b4fb0c544874a73c463993bde122f031c34897bb1eeb653d2ba2b336db83e6",
+    "rust-1.27.0-x86_64-apple-darwin": "a1d48190992e01aac1a181bce490c80cb2c1421724b4ff0e2fb7e224a958ce0f",
+    "rust-1.27.0-x86_64-unknown-freebsd": "f0754434f76f261ecdfd7ea3645b251b0188e263c0c7a7466aafac1b034d20ec",
+    "rust-1.27.0-x86_64-unknown-linux-gnu": "235ad78e220b10a2d0267aea1e2c0f19ef5eaaff53ad6ff8b12c1d4370dec9a3",
+}
