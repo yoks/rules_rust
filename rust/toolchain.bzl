@@ -2,7 +2,13 @@
 Toolchain rules used by Rust.
 """
 
-load(":utils.bzl", "relative_path")
+load(":utils.bzl", "relative_path",
+                   "workspace_safe_str")
+load(":known_shas.bzl", "FILE_KEY_TO_SHA")
+load(":triple_mappings.bzl", "triple_to_system",
+                             "triple_to_constraint_set",
+                             "system_to_dylib_ext",
+                             "system_to_staticlib_ext")
 
 ZIP_PATH = "/usr/bin/zip"
 
@@ -29,8 +35,69 @@ def _get_comp_mode_codegen_opts(ctx, toolchain):
   comp_mode = ctx.var["COMPILATION_MODE"]
   if not comp_mode in toolchain.compilation_mode_opts:
     fail("Unrecognized compilation mode %s for toolchain." % comp_mode)
-  
+
   return toolchain.compilation_mode_opts[comp_mode]
+
+def _check_triples(exec_triples, target_triples):
+  """Verifies that the provided execution platform and target platform triples make sense.
+
+  The primary property checked is that the execution platform triples are included in the
+  target platform triples so that all libraries can be compiled for the execution platform, if
+  necessary.
+
+  Args:
+    exec_triples: The Bazel execution platform or "host" that the toolchain must run on, in the
+        form of a Rust-style triple. More than one triple may be provided.
+    target_triples: The supported compilation targets for the toolchains in the form of a Rust-
+        style triple. More than one triple may be provided, but this list must include all
+        values of exec_triples.
+  """
+
+  missing_execs_in_targets = []
+  for triple in exec_triples:
+    if triple not in target_triples:
+      missing_execs_in_targets.append(triple)
+
+  if missing_execs_in_targets:
+    fail("target_triples must contain all exec_triples so build scripts can run. It was missing {}"
+         .format(missing_execs_in_targets))
+
+def _check_version(version, iso_date):
+  """Verifies that the version components (version + date) are sensible
+
+  Args:
+    version: A known rust version or one of "nightly" or "beta"
+    iso_date: The exact release date of the selected "nightly" or "beta" toolchain. Required if
+        nightly or beta are specified, no effect otherwise.
+  """
+
+  if version in ("nightly", "beta"):
+    if not iso_date:
+      fail("iso_date must be provided if version is nightly or beta", iso_date)
+  elif iso_date:
+    print("iso_date has no effect when a fixed version is provided")
+
+
+def _version_str(version, iso_date=None):
+  """Produces a unique version string for a given version id and iso_date.
+
+  Args:
+    version: A known rust version or one of "nightly" or "beta"
+    iso_date: The exact release date of the selected "nightly" or "beta" toolchain. Required if
+        nightly or beta are specified, no effect otherwise.
+  """
+
+  if version in ("nightly", "beta"):
+    if not iso_date:
+      fail('iso_date must be specified to generate version str for "nightly" or "beta"',
+           iso_date)
+
+    return "{}-{}".format(version, iso_date)
+
+  # TODO(acmcarther): Pick a better placeholder for "p"
+  return version.replace(".", "p")
+
+
 
 # Utility methods that use the toolchain provider.
 def build_rustc_command(ctx, toolchain, crate_name, crate_type, src, output_dir,
@@ -40,7 +107,7 @@ def build_rustc_command(ctx, toolchain, crate_name, crate_type, src, output_dir,
   """
 
   # Paths to cc (for linker) and ar
-  cpp_fragment = ctx.host_fragments.cpp
+  cpp_fragment = ctx.fragments.cpp
   cc = cpp_fragment.compiler_executable
   ar = cpp_fragment.ar_executable
   # Currently, the CROSSTOOL config for darwin sets ar to "libtool". Because
@@ -70,8 +137,8 @@ def build_rustc_command(ctx, toolchain, crate_name, crate_type, src, output_dir,
       _out_dir_setup_cmd(ctx.file.out_dir_tar) +
       _get_rustc_env(ctx) +
       [
-          "LD_LIBRARY_PATH=%s" % _get_path_str(_get_dir_names(toolchain.rustc_lib)),
-          "DYLD_LIBRARY_PATH=%s" % _get_path_str(_get_dir_names(toolchain.rustc_lib)),
+          "LD_LIBRARY_PATH=%s" % _get_path_str(_get_dir_names(toolchain.rust_lib)),
+          "DYLD_LIBRARY_PATH=%s" % _get_path_str(_get_dir_names(toolchain.rust_lib)),
           "OUT_DIR=$(pwd)/out_dir",
           toolchain.rustc.path,
           src.path,
@@ -85,6 +152,7 @@ def build_rustc_command(ctx, toolchain, crate_name, crate_type, src, output_dir,
           "--codegen ar=%s" % ar,
           "--codegen linker=%s" % cc,
           "--codegen link-args='%s'" % ' '.join(cpp_fragment.link_options),
+          "--target=%s" % toolchain.target_triple,
           "--out-dir %s" % output_dir,
           "--emit=dep-info,link",
           "--color always",
@@ -108,8 +176,8 @@ def build_rustdoc_command(ctx, toolchain, rust_doc_zip, depinfo, lib_rs, target,
       depinfo.setup_cmd + [
           "rm -rf %s;" % docs_dir,
           "mkdir %s;" % docs_dir,
-          "LD_LIBRARY_PATH=%s" % _get_path_str(_get_dir_names(toolchain.rustc_lib)),
-          "DYLD_LIBRARY_PATH=%s" % _get_path_str(_get_dir_names(toolchain.rustc_lib)),
+          "LD_LIBRARY_PATH=%s" % _get_path_str(_get_dir_names(toolchain.rust_lib)),
+          "DYLD_LIBRARY_PATH=%s" % _get_path_str(_get_dir_names(toolchain.rust_lib)),
           toolchain.rust_doc.path,
           lib_rs.path,
           "--crate-name %s" % target.name,
@@ -139,8 +207,8 @@ def build_rustdoc_test_command(ctx, toolchain, depinfo, lib_rs):
       ["set -e\n"] +
       depinfo.setup_cmd +
       [
-          "LD_LIBRARY_PATH=%s" % _get_path_str(_get_dir_names(toolchain.rustc_lib)),
-          "DYLD_LIBRARY_PATH=%s" % _get_path_str(_get_dir_names(toolchain.rustc_lib)),
+          "LD_LIBRARY_PATH=%s" % _get_path_str(_get_dir_names(toolchain.rust_lib)),
+          "DYLD_LIBRARY_PATH=%s" % _get_path_str(_get_dir_names(toolchain.rust_lib)),
           toolchain.rust_doc.path,
       ] + ["-L all=%s" % dir for dir in _get_dir_names(toolchain.rust_lib)] + [
           lib_rs.path,
@@ -205,7 +273,6 @@ def _out_dir_setup_cmd(out_dir_tar):
      return []
 
 # The rust_toolchain rule definition and implementation.
-
 def _rust_toolchain_impl(ctx):
   compilation_mode_opts = {}
   for k, v in ctx.attr.opt_level.items():
@@ -223,6 +290,8 @@ def _rust_toolchain_impl(ctx):
       rust_lib = _get_files(ctx.attr.rust_lib),
       staticlib_ext = ctx.attr.staticlib_ext,
       dylib_ext = ctx.attr.dylib_ext,
+      target_triple = ctx.attr.target_triple,
+      exec_triple = ctx.attr.exec_triple,
       os = ctx.attr.os,
       compilation_mode_opts = compilation_mode_opts,
       crosstool_files = ctx.files._crosstool)
@@ -238,6 +307,8 @@ rust_toolchain = rule(
         "staticlib_ext": attr.string(mandatory = True),
         "dylib_ext": attr.string(mandatory = True),
         "os": attr.string(mandatory = True),
+        "exec_triple": attr.string(mandatory = True),
+        "target_triple": attr.string(mandatory = True),
         "_crosstool": attr.label(
             default = Label("//tools/defaults:crosstool"),
         ),
@@ -246,45 +317,335 @@ rust_toolchain = rule(
     },
 )
 
-"""Declares a Rust toolchain for use.
 
-This is used when porting the rust_rules to a new platform.
+def gen_toolchain_details(exec_triples, target_triples, version_str):
+  """Generates a list of toolchains and BUILD file contents for a toolchain workspace
 
-Args:
-  name: The name of the toolchain instance.
-  rustc: The location of the `rustc` binary. Can be a direct source or a filegroup containing one
-      item.
-  rustdoc: The location of the `rustdoc` binary. Can be a direct source or a filegroup containing
-      one item.
-  rustc_lib: The libraries used by rustc.
-  rust_lib: The libraries used by rustc.
+  Each toolchain supports exactly one execution triple and exactly one target triple. One
+  toolchain is declared for each combination of execution triple and target triple.
 
-Example:
-  Suppose the core rust team has ported the compiler to a new target CPU, called `cpuX`. This
-  support can be used in Bazel by defining a new toolchain definition and declaration:
-  ```
-  load('@io_bazel_rules_rust//rust:toolchain.bzl', 'rust_toolchain')
+  This defines the default toolchain separately from the actual repositories, so that the remote
+  repositories will only be downloaded if they are actually used. It also allows individual
+  toolchains to reuse compilers and stdlibs as appropriate.
+  """
 
-  toolchain(
-    name="rust_cpuX",
-    exec_compatible_with = [
-      "@bazel_tools//platforms:cpuX",
-    ],
-    target_compatible_with = [
-      "@bazel_tools//platforms:cpuX",
-    ],
-    toolchain = ":rust_cpuX_impl")
-  rust_toolchain(
-    name="rust_cpuX_impl",
-    rustc="@rust_cpuX//:rustc",
-    rustc_lib=["@rust_cpuX//:rustc_lib"],
-    rust_lib=["@rust_cpuX//:rust_lib"],
-    rust_doc="@rust_cpuX//:rustdoc")
-  ```
+  triple_to_constraint_values = {}
+  for exec_triple in exec_triples:
+    triple_to_constraint_values[exec_triple] = triple_to_constraint_set(exec_triple)
+  for target_triple in target_triples:
+    if not triple_to_constraint_values.get(target_triple):
+      triple_to_constraint_values[target_triple] = triple_to_constraint_set(target_triple)
 
-  Then, either add the label of the toolchain rule to register_toolchains in the WORKSPACE, or pass
-  it to the "--extra_toolchains" flag for Bazel, and it will be used.
+  all_toolchain_names = []
+  all_toolchain_decls = []
+  for exec_triple in exec_triples:
+    for target_triple in target_triples:
+      toolchain_name = "rust_for_{}_on_{}".format(target_triple, exec_triple)
+      compiler_workspace_name = "@rustc__{}__{}".format(version_str, workspace_safe_str(exec_triple))
+      stdlib_workspace_name = "@rust_std__{}__{}".format(version_str, workspace_safe_str(target_triple))
+      target_system = triple_to_system(target_triple)
+      target_staticlib_ext = system_to_staticlib_ext(target_system)
+      target_dylib_ext = system_to_dylib_ext(target_system)
+      all_toolchain_names.append(toolchain_name)
+      toolchain_decl = """
+native.toolchain(
+    name = "{toolchain_name}",
+    exec_compatible_with = {exec_compatible_with},
+    target_compatible_with = {target_compatible_with},
+    toolchain = ":{toolchain_name}_impl",
+    toolchain_type = "@io_bazel_rules_rust//rust:toolchain"
+)
 
-  See @io_bazel_rules_rust//rust:repositories.bzl for examples of defining the @rust_cpuX repository
-  with the actual binaries and libraries.
-"""
+# TODO(acmcarther): Linker Executable: If not specified,
+# ctx.host_fragments.cpp.compiler_executable will be used
+rust_toolchain(
+    name = "{toolchain_name}_impl",
+    rust_doc = "{compiler_workspace_name}//:rustdoc",
+    rustc = "{compiler_workspace_name}//:rustc",
+    rustc_lib = ["{compiler_workspace_name}//:rustc_lib"],
+    rust_lib = ["{stdlib_workspace_name}//:rust_lib"],
+    staticlib_ext = "{target_staticlib_ext}",
+    dylib_ext = "{target_dylib_ext}",
+    os = "{target_system}",
+    exec_triple = "{exec_triple}",
+    target_triple = "{target_triple}",
+    visibility = ["//visibility:public"],
+)""".format(toolchain_name=toolchain_name,
+            exec_triple=exec_triple,
+            target_triple=target_triple,
+            exec_compatible_with = triple_to_constraint_values[exec_triple],
+            target_compatible_with = triple_to_constraint_values[target_triple],
+            compiler_workspace_name=compiler_workspace_name,
+            stdlib_workspace_name=stdlib_workspace_name,
+            target_staticlib_ext=target_staticlib_ext,
+            target_dylib_ext=target_dylib_ext,
+            target_system=target_system)
+      all_toolchain_decls.append(toolchain_decl)
+
+  build_file_content = """
+load("@io_bazel_rules_rust//rust:toolchain.bzl", "rust_toolchain")
+
+{toolchain_decls}
+""".format(version_str=version_str, toolchain_decls=("\n".join(all_toolchain_decls)))
+
+  return struct(
+      toolchain_names = all_toolchain_names,
+      build_file_content = build_file_content
+  )
+
+
+def load_tool(name, triple, version, iso_date, tool_name, extra_shas, build_file_content):
+  """Loads a rust tool from the standard download site.
+
+  Args:
+    name: The generated workspace name
+    triple: The Rust-style triple for the tool
+    version: A known rust version or one of "nightly" or "beta"
+    iso_date: The exact release date of the selected "nightly" or "beta" toolchain. Required if
+        nightly or beta are specified, no effect otherwise.
+    tool_name: The name of the tool to load. See KNOWN_TOOL_IDENTS for the list of known tools,
+        though this argument is not checked.
+    extra_shas: A dict containing mappings from Rust download URLs to known or expected SHAs.
+        See known_shas.bzl for the SHAs included in rules_rust, and to see what format is expected.
+    build_file_content: The contents of the build file for the loaded tool.
+  """
+
+  archive_name = "{tool_name}-{version}-{triple}".format(tool_name=tool_name,
+                                                          version=version,
+                                                          triple=triple)
+  file_key = None
+  if version == "nightly":
+    file_key = "{iso_date}/{archive_name}.tar.gz".format(iso_date=iso_date,
+                                                         archive_name=archive_name)
+  elif version == "beta":
+    file_key = "{iso_date}/{archive_name}.tar.gz".format(iso_date=iso_date,
+                                                         archive_name=archive_name)
+  else:
+    file_key = "{archive_name}.tar.gz".format(archive_name=archive_name)
+
+  native.new_http_archive(
+      name = name,
+      url = "https://static.rust-lang.org/dist/{file_key}".format(file_key=file_key),
+      strip_prefix = archive_name,
+      sha256 = FILE_KEY_TO_SHA.get(file_key) or extra_shas.get(file_key),
+      build_file_content = build_file_content
+  )
+
+
+def load_compiler(triple, version, iso_date, extra_shas):
+  """Configures and loads the Rust compiler.
+
+  Args:
+    triple: A Rust-style platform identifying triple
+    version: A known rust version or one of "nightly" or "beta"
+    iso_date: The exact release date of the selected "nightly" or "beta" toolchain. Required if
+        nightly or beta are specified, no effect otherwise.
+    extra_shas: A dict containing mappings from Rust download URLs to known or expected SHAs.
+        See known_shas.bzl for the SHAs included in rules_rust, and to see what format is expected.
+  """
+
+  load_tool(
+      name = "rustc__{}__{}".format(_version_str(version, iso_date),
+                                    workspace_safe_str(triple)),
+      triple = triple,
+      version = version,
+      iso_date = iso_date,
+      tool_name = "rustc",
+      extra_shas = extra_shas,
+      build_file_content = """
+filegroup(
+    name = "rustc",
+    srcs = glob(["rustc/bin/rustc*"]),
+    visibility = ["//visibility:public"],
+)
+
+filegroup(
+    name = "rustdoc",
+    srcs = glob(["rustc/bin/rustdoc*"]),
+    visibility = ["//visibility:public"],
+)
+
+filegroup(
+    name = "rustc_lib",
+    srcs = glob([
+        "rustc/lib/*.dll",
+        "rustc/lib/*.dylib",
+        "rustc/lib/*.so",
+    ]),
+    visibility = ["//visibility:public"],
+)
+""".format(triple=triple)
+  )
+
+
+def load_stdlib(triple, version, iso_date, extra_shas):
+  """Configures and loads the Rust standard library.
+
+  Args:
+    triple: A Rust-style platform identifying triple
+    version: A known rust version or one of "nightly" or "beta"
+    iso_date: The exact release date of the selected "nightly" or "beta" toolchain. Required if
+        nightly or beta are specified, no effect otherwise.
+    extra_shas: A dict containing mappings from Rust download URLs to known or expected SHAs.
+        See known_shas.bzl for the SHAs included in rules_rust, and to see what format is expected.
+  """
+
+  load_tool(
+      name = "rust_std__{}__{}".format(_version_str(version, iso_date),
+                                       workspace_safe_str(triple)),
+      triple = triple,
+      version = version,
+      iso_date = iso_date,
+      tool_name = "rust-std",
+      extra_shas = extra_shas,
+      build_file_content = """
+filegroup(
+    name = "rust_lib",
+    srcs = glob([
+        "rust-std-{triple}/lib/rustlib/{triple}/lib/*.a",
+        "rust-std-{triple}/lib/rustlib/{triple}/lib/*.dll",
+        "rust-std-{triple}/lib/rustlib/{triple}/lib/*.dylib",
+        "rust-std-{triple}/lib/rustlib/{triple}/lib/*.lib",
+        "rust-std-{triple}/lib/rustlib/{triple}/lib/*.rlib",
+        "rust-std-{triple}/lib/rustlib/{triple}/lib/*.so",
+    ]),
+    visibility = ["//visibility:public"],
+)""".format(triple=triple))
+
+
+def load_mingw(triple, version, iso_date, extra_shas):
+  """Configures and loads the Rust MinGW tool.
+
+  It is not valid to call this function with a non-Windows (target) triple.
+
+  Args:
+    triple: A Rust-style platform identifying triple
+    version: A known rust version or one of "nightly" or "beta"
+    iso_date: The exact release date of the selected "nightly" or "beta" toolchain. Required if
+        nightly or beta are specified, no effect otherwise.
+    extra_shas: A dict containing mappings from Rust download URLs to known or expected SHAs.
+        See known_shas.bzl for the SHAs included in rules_rust, and to see what format is expected.
+  """
+
+  if "windows" not in triple:
+    fail("rust-mingw cannot be loaded for a non-Windows triple", triple)
+
+  load_tool(
+      name = "rust_mingw__{}__{}".format(_version_str(version, iso_date),
+                                         workspace_safe_str(triple)),
+      triple = triple,
+      version = version,
+      iso_date = iso_date,
+      tool_name = "rust-mingw",
+      extra_shas = extra_shas,
+      # TODO(acmcarther): Define the BUILD file for rust-mingw
+      build_file_content = """
+filegroup(
+    name = "dlltool",
+    srcs = ["rust-mingw/lib/rustlib/{triple}/bin/dlltool.exe"],
+    visibility = ["//visibility:public"],
+)
+
+filegroup(
+    name = "gcc",
+    srcs = ["rust-mingw/lib/rustlib/{triple}/bin/gcc.exe"],
+    visibility = ["//visibility:public"],
+)
+
+filegroup(
+    name = "ld",
+    srcs = ["rust-mingw/lib/rustlib/{triple}/bin/ld.exe"],
+    visibility = ["//visibility:public"],
+)
+
+filegroup(
+    name = "mingw_lib",
+    srcs = glob([
+      "rust-mingw/lib/rustlib/{triple}/lib/*.a",
+      "rust-mingw/lib/rustlib/{triple}/bin/*.dll",
+    ]),
+    visibility = ["//visibility:public"],
+)""".format(triple=triple))
+
+
+def prepare_toolchains(name, version_str, exec_triples, target_triples):
+  """Generates a toolchain-bearing workspace and registers the set of toolchains.
+
+  This function expects the standard libraries and compilers to have already been declared.
+
+  Args:
+    name: The name for the generated toolchain-bearing workspace
+    version_str: A sanitized version identifier
+    exec_triples: The Bazel execution platform or "host" that the toolchain must run on, in the
+        form of a Rust-style triple. More than one triple may be provided.
+    target_triples: The supported compilation targets for the toolchains in the form of a Rust-
+        style triple. More than one triple may be provided, but this list must include all
+        values of exec_triples.
+  """
+
+  toolchain_details = gen_toolchain_details(exec_triples, target_triples, version_str)
+
+  native.new_local_repository(
+      name = name,
+      path = ".",
+      build_file_content = toolchain_details.build_file_content
+  )
+
+  qualified_toolchain_names = []
+  for toolchain_name in toolchain_details.toolchain_names:
+    qualified_toolchain_names.append("@{workspace_name}//:{toolchain_name}".format(
+        workspace_name=name,
+        toolchain_name=toolchain_name))
+
+  native.register_toolchains(*qualified_toolchain_names)
+
+
+def load_toolchains(version="1.27.0",
+                    iso_date=None,
+                    exec_triples=["x86_64-unknown-linux-gnu"],
+                    target_triples=["x86_64-unknown-linux-gnu"],
+                    extra_shas={}):
+  """Configures and loads in the set of rust toolchains required to compile Rust.
+
+  This rule loads remote workspaces for all rust compilers for the provided exec_triples, all
+  rust stdlibs for the provided target triples, and assembles them together into a list of
+  toolchains (one per exec and target) in another workspace. Those toolchains are loaded
+  sequentially by this rule.
+
+  It is not valid to call this function more than once for a given version and iso_date as
+  this function generates repository rules that may not have unique names. To support multiple
+  execution platforms and targets for the same version, specify all required values for
+  "exec_triples" and "target_triples".
+
+  Args:
+    version: A known rust version or one of "nightly" or "beta"
+    iso_date: The exact release date of the selected "nightly" or "beta" toolchain. Required if
+        nightly or beta are specified, no effect otherwise.
+    exec_triples: The Bazel execution platform or "host" that the toolchain must run on, in the
+        form of a Rust-style triple. More than one triple may be provided.
+    target_triples: The supported compilation targets for the toolchains in the form of a Rust-
+        style triple. More than one triple may be provided, but this list must include all
+        values of exec_triples.
+    extra_shas: A dict containing mappings from Rust download URLs to known or expected SHAs.
+        See known_shas.bzl for the SHAs included in rules_rust, and to see what format is expected.
+  """
+
+  _check_triples(exec_triples, target_triples)
+  _check_version(version, iso_date)
+
+  for triple in exec_triples:
+    load_compiler(triple, version, iso_date, extra_shas)
+
+  for triple in target_triples:
+    load_stdlib(triple, version, iso_date, extra_shas)
+    if "windows" in triple:
+      load_mingw(triple, version, iso_date, extra_shas)
+
+  version_str = _version_str(version, iso_date)
+  workspace_name = "rust_toolchains_{}".format(version_str)
+  prepare_toolchains(
+      name = workspace_name,
+      version_str = version_str,
+      exec_triples = exec_triples,
+      target_triples = target_triples
+  )

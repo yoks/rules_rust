@@ -582,6 +582,7 @@ rust_library = rule(
     attrs = dict(_rust_common_attrs.items() +
                  _rust_library_attrs.items()),
     host_fragments = ["cpp"],
+    fragments = ["cpp"],
     toolchains = ["@io_bazel_rules_rust//rust:toolchain"],
 )
 
@@ -698,6 +699,7 @@ rust_binary = rule(
     attrs = _rust_common_attrs,
     executable = True,
     host_fragments = ["cpp"],
+    fragments = ["cpp"],
     toolchains = ["@io_bazel_rules_rust//rust:toolchain"],
 )
 
@@ -829,6 +831,7 @@ rust_test = rule(
     attrs = _rust_common_attrs,
     executable = True,
     host_fragments = ["cpp"],
+    fragments = ["cpp"],
     test = True,
     toolchains = ["@io_bazel_rules_rust//rust:toolchain"],
 )
@@ -998,6 +1001,7 @@ rust_bench_test = rule(
     attrs = _rust_common_attrs,
     executable = True,
     host_fragments = ["cpp"],
+    fragments = ["cpp"],
     test = True,
     toolchains = ["@io_bazel_rules_rust//rust:toolchain"],
 )
