@@ -22,8 +22,6 @@ load(
     "rust_repositories",
     "cargo_repository",
     "rustfmt_repository",
-    "rls_repository",
-    "clippy_repository",
 )
 
 rust_repositories()

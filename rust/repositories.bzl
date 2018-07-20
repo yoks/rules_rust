@@ -395,7 +395,7 @@ def rust_repositories():
         version = LATEST_STABLE_VERSION,
     )
 
-def cargo_repository(name, exec_triple, version = LATEST_CARGO_VERSION, iso_date = None):
+def cargo_repository(name, exec_triple, version = "nightly", iso_date = LATEST_NIGHTLY_DATE):
     _check_version_valid(version, iso_date)
 
     system = triple_to_system(exec_triple)
