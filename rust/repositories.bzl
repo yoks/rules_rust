@@ -1,19 +1,26 @@
 load(":known_shas.bzl", "FILE_KEY_TO_SHA")
 load(":triple_mappings.bzl", "triple_to_system", "triple_to_constraint_set", "system_to_binary_ext", "system_to_dylib_ext", "system_to_staticlib_ext")
+load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 
 DEFAULT_TOOLCHAIN_NAME_PREFIX = "toolchain_for"
 
-def _check_version_valid(version, iso_date, param_prefix = ""):
+LATEST_STABLE_VERSION = "1.26.1"
+
+LATEST_CARGO_VERSION = "0.28.0"
+
+LATEST_NIGHTLY_DATE = "2018-07-19"
+
+def _check_version_valid(version, iso_date):
     """Verifies that the provided rust version and iso_date make sense."""
 
     if not version and iso_date:
-        fail("{param_prefix}iso_date must be paired with a {param_prefix}version".format(param_prefix = param_prefix))
+        fail("iso_date must be paired with a version")
 
     if version in ("beta", "nightly") and not iso_date:
-        fail("{param_prefix}iso_date must be specified if version is 'beta' or 'nightly'".format(param_prefix = param_prefix))
+        fail("iso_date must be specified if version is 'beta' or 'nightly'")
 
     if version not in ("beta", "nightly") and iso_date:
-        print("{param_prefix}iso_date is ineffective if an exact version is specified".format(param_prefix = param_prefix))
+        print("iso_date is ineffective if an exact version is specified")
 
 def serialized_constraint_set_from_triple(target_triple):
     constraint_set = triple_to_constraint_set(target_triple)
@@ -151,7 +158,7 @@ def produce_tool_path(tool_name, target_triple, version):
 
     return "{}-{}-{}".format(tool_name, version, target_triple)
 
-def load_arbitrary_tool(ctx, tool_name, param_prefix, tool_subdirectory, version, iso_date, target_triple):
+def load_arbitrary_tool(ctx, tool_name, tool_subdirectory, version, iso_date, target_triple):
     """Loads a Rust tool, downloads, and extracts into the common workspace.
 
     This function sources the tool from the Rust-lang static file server. The index is available
@@ -160,7 +167,6 @@ def load_arbitrary_tool(ctx, tool_name, param_prefix, tool_subdirectory, version
     Args:
       ctx: A repository_ctx (no attrs required).
       tool_name: The name of the given tool per the archive naming.
-      param_prefix: The name of the versioning param if the repository rule supports multiple tools.
       tool_subdirectory: The subdirectory of the tool files (wo level below the root directory of
                          the archive. The root directory of the archive is expected to match
                          $TOOL_NAME-$VERSION-$TARGET_TRIPLE.
@@ -169,7 +175,7 @@ def load_arbitrary_tool(ctx, tool_name, param_prefix, tool_subdirectory, version
       target_triple: The rust-style target triple of the tool
     """
 
-    _check_version_valid(version, iso_date, param_prefix)
+    _check_version_valid(version, iso_date)
 
     # N.B. See https://static.rust-lang.org/dist/index.html to find the tool_suburl for a given
     # tool.
@@ -197,7 +203,6 @@ def _load_rust_compiler(ctx):
     load_arbitrary_tool(
         ctx,
         iso_date = ctx.attr.iso_date,
-        param_prefix = "rustc_",
         target_triple = target_triple,
         tool_name = "rustc",
         tool_subdirectory = "rustc",
@@ -221,7 +226,6 @@ def _load_rust_stdlib(ctx, target_triple):
     load_arbitrary_tool(
         ctx,
         iso_date = ctx.attr.iso_date,
-        param_prefix = "rust-std_",
         target_triple = target_triple,
         tool_name = "rust-std",
         tool_subdirectory = "rust-std-{}".format(target_triple),
@@ -374,19 +378,69 @@ def rust_repositories():
         name = "rust_linux_x86_64",
         exec_triple = "x86_64-unknown-linux-gnu",
         extra_target_triples = [],
-        version = "1.26.1",
+        version = LATEST_STABLE_VERSION,
     )
 
     rust_repository_set(
         name = "rust_darwin_x86_64",
         exec_triple = "x86_64-apple-darwin",
         extra_target_triples = [],
-        version = "1.26.1",
+        version = LATEST_STABLE_VERSION,
     )
 
     rust_repository_set(
         name = "rust_freebsd_x86_64",
         exec_triple = "x86_64-unknown-freebsd",
         extra_target_triples = [],
-        version = "1.26.1",
+        version = LATEST_STABLE_VERSION,
+    )
+
+def cargo_repository(name, exec_triple, version = LATEST_CARGO_VERSION, iso_date = None):
+    _check_version_valid(version, iso_date)
+
+    system = triple_to_system(exec_triple)
+    tool_suburl = produce_tool_suburl("cargo", exec_triple, version, iso_date)
+    tool_path = produce_tool_path("cargo", exec_triple, version)
+
+    http_archive(
+        name = name,
+        build_file_content = """
+# TODO(acmcarther): Add a genrule to assist in using this binary
+alias(
+    name = "cargo",
+    actual = ":bin/cargo{binary_ext}",
+    visibility = ["//visibility:public"],
+)
+""".format(binary_ext = system_to_binary_ext(system)),
+        sha256 = FILE_KEY_TO_SHA.get(tool_suburl) or "",
+        strip_prefix = "{}/cargo".format(tool_path),
+        url = "https://static.rust-lang.org/dist/{}.tar.gz".format(tool_suburl),
+    )
+
+def rustfmt_repository(name, exec_triple, version = "nightly", iso_date = LATEST_NIGHTLY_DATE):
+    _check_version_valid(version, iso_date)
+
+    system = triple_to_system(exec_triple)
+    tool_suburl = produce_tool_suburl("rustfmt", exec_triple, version, iso_date)
+    tool_path = produce_tool_path("rustfmt", exec_triple, version)
+
+    http_archive(
+        name = name,
+        build_file_content = """
+# TODO(acmcarther): Add a genrule to assist in using this binary
+alias(
+    name = "rustfmt",
+    actual = ":bin/rustfmt{binary_ext}",
+    visibility = ["//visibility:public"],
+)
+
+alias(
+    name = "cargo-fmt",
+    actual = ":bin/cargo-fmt{binary_ext}",
+    visibility = ["//visibility:public"],
+)
+""".format(binary_ext = system_to_binary_ext(system)),
+        sha256 = FILE_KEY_TO_SHA.get(tool_suburl) or "",
+        strip_prefix = "{}/rustfmt-preview".format(tool_path),
+        url = "https://static.rust-lang.org/dist/{}.tar.gz".format(tool_suburl),
     )

@@ -17,9 +17,26 @@ local_repository(
 )
 
 # TODO: Move this to examples/WORKSPACE when recursive repositories are enabled.
-load("//rust:repositories.bzl", "rust_repositories")
+load(
+    "//rust:repositories.bzl",
+    "rust_repositories",
+    "cargo_repository",
+    "rustfmt_repository",
+    "rls_repository",
+    "clippy_repository",
+)
 
 rust_repositories()
+
+cargo_repository(
+    name = "examples_cargo",
+    exec_triple = "x86_64-unknown-linux-gnu",
+)
+
+rustfmt_repository(
+    name = "examples_rustfmt",
+    exec_triple = "x86_64-unknown-linux-gnu",
+)
 
 new_git_repository(
     name = "libc",

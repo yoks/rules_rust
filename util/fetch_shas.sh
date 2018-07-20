@@ -12,14 +12,21 @@ BETA_ISO_DATES="$(cat ./util/fetch_shas_BETA_ISO_DATES.txt)"
 NIGHTLY_ISO_DATES="$(cat ./util/fetch_shas_NIGHTLY_ISO_DATES.txt)"
 
 enumerate_keys() {
-  for TOOL in $TOOLS
+  for TARGET in $TARGETS
   do
-    for TARGET in $TARGETS
+    for TOOL in $TOOLS
     do
-      for VERSION in $VERSIONS
-      do
-        echo "$TOOL-$VERSION-$TARGET"
-      done
+      # VERSIONS only applies to Rust compiler and std
+      # ... other tools use their own versioning
+      if [[ $TOOL == "rust" ]] ||
+         [[ $TOOL == "rustc" ]] ||
+         [[ $TOOL == "rust-std" ]];
+      then
+        for VERSION in $VERSIONS
+        do
+          echo "$TOOL-$VERSION-$TARGET"
+        done
+      fi
 
       for ISO_DATE in $BETA_ISO_DATES
       do
