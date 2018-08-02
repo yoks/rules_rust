@@ -268,6 +268,7 @@ def _rust_library_impl(ctx):
         depinfo = depinfo,
         output_dir = output_dir,
         output_hash = output_hash,
+        target_triple = toolchain.target_triple,
         toolchain = toolchain,
     )
 
@@ -334,6 +335,7 @@ def _rust_binary_impl(ctx):
         ctx = ctx,
         depinfo = depinfo,
         output_dir = output_dir,
+        target_triple = toolchain.target_triple,
         toolchain = toolchain,
     )
 
@@ -421,6 +423,7 @@ def _rust_test_common(ctx, test_binary):
         depinfo = depinfo,
         output_dir = output_dir,
         rust_flags = ["--test"],
+        target_triple = toolchain.target_triple,
         toolchain = toolchain,
     )
 

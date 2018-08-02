@@ -41,6 +41,7 @@ def build_rustc_command(
         src,
         output_dir,
         depinfo,
+        target_triple,
         output_hash = None,
         rust_flags = []):
     """
@@ -51,6 +52,9 @@ def build_rustc_command(
     cpp_fragment = ctx.host_fragments.cpp
     cc = cpp_fragment.compiler_executable
     ar = cpp_fragment.ar_executable
+
+    if toolchain.linker:
+        cc = _get_first_file(toolchain.linker).path
 
     # Currently, the CROSSTOOL config for darwin sets ar to "libtool". Because
     # rust uses ar-specific flags, use /usr/bin/ar in this case.
@@ -94,6 +98,7 @@ def build_rustc_command(
             "--codegen link-args='%s'" % " ".join(cpp_fragment.link_options),
             "--out-dir %s" % output_dir,
             "--emit=dep-info,link",
+            "--target %s" % target_triple,
             "--color always",
         ] + ["--codegen link-arg='-Wl,-rpath={}'".format(rpath) for rpath in rpaths] +
         features_flags +
@@ -232,6 +237,8 @@ def _rust_toolchain_impl(ctx):
         staticlib_ext = ctx.attr.staticlib_ext,
         dylib_ext = ctx.attr.dylib_ext,
         os = ctx.attr.os,
+        target_triple = ctx.attr.target_triple,
+        linker = ctx.attr.linker,
         compilation_mode_opts = compilation_mode_opts,
         crosstool_files = ctx.files._crosstool,
     )
@@ -247,8 +254,10 @@ rust_toolchain = rule(
         "staticlib_ext": attr.string(mandatory = True),
         "dylib_ext": attr.string(mandatory = True),
         "os": attr.string(mandatory = True),
-        "exec_triple": attr.string(),
-        "target_triple": attr.string(),
+        "linker": attr.label(
+            allow_single_file = True,
+        ),
+        "target_triple": attr.string(mandatory = True),
         "_crosstool": attr.label(
             default = Label("//tools/defaults:crosstool"),
         ),

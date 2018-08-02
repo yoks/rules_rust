@@ -16,6 +16,16 @@ local_repository(
     path = "docs",
 )
 
+new_local_repository(
+    name = "arm_linux_gnueabi_gcc",
+    build_file_content = """
+exports_files([
+  "arm-linux-gnueabi-gcc",
+])
+""",
+    path = "/usr/bin",
+)
+
 # TODO: Move this to examples/WORKSPACE when recursive repositories are enabled.
 load("//rust:repositories.bzl", "rust_repositories")
 
