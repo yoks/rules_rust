@@ -73,7 +73,7 @@ filegroup(
         target_triple = target_triple,
     )
 
-def BUILD_for_rust_toolchain(workspace_name, name, exec_triple, target_triple, linker_path):
+def BUILD_for_rust_toolchain(workspace_name, name, exec_triple, target_triple):
     """Emits a toolchain declaration to match an existing compiler and stdlib.
 
     Args:
@@ -81,14 +81,9 @@ def BUILD_for_rust_toolchain(workspace_name, name, exec_triple, target_triple, l
       name: The name of the toolchain declaration
       exec_triple: The rust-style target that this compiler runs on
       target_triple: The rust-style target triple of the tool
-      linker_path: The Bazel workspace path to the linker to be used
     """
 
     system = triple_to_system(target_triple)
-
-    linker_path_str = "None"
-    if linker_path:
-        linker_path_str = "\"{}\"".format(linker_path)
 
     return """
 rust_toolchain(
@@ -100,7 +95,6 @@ rust_toolchain(
     staticlib_ext = "{staticlib_ext}",
     dylib_ext = "{dylib_ext}",
     os = "{system}",
-    linker = {linker_path_str},
     target_triple = "{target_triple}",
     visibility = ["//visibility:public"],
 )
@@ -111,7 +105,6 @@ rust_toolchain(
         dylib_ext = system_to_dylib_ext(system),
         system = system,
         target_triple = target_triple,
-        linker_path_str = linker_path_str,
     )
 
 def BUILD_for_toolchain(name, parent_workspace_name, exec_triple, target_triple):
@@ -241,7 +234,6 @@ def _load_rust_stdlib(ctx, target_triple):
             target_triple = target_triple,
         ),
         exec_triple = ctx.attr.exec_triple,
-        linker_path = ctx.attr.target_triples_to_linker.get(target_triple),
         target_triple = target_triple,
         workspace_name = ctx.attr.name,
     )
@@ -287,7 +279,6 @@ Args:
   name: A unique name for this rule
   exec_triple: The Rust-style target triple for the compilation platform
   extra_target_triples: The Rust-style triples for extra compilation targets
-  target_triples_to_linker: A mapping from target triple to workspace path to a linker binary
   toolchain_name_prefix: The per-target prefix expected for the rust_toolchain declarations
   version: The version of the tool among "nightly", "beta', or an exact version.
   iso_date: The date of the tool (or None, if the version is a specific version).
@@ -299,7 +290,6 @@ rust_toolchain_repository = repository_rule(
         "iso_date": attr.string(),
         "exec_triple": attr.string(mandatory = True),
         "extra_target_triples": attr.string_list(),
-        "target_triples_to_linker": attr.string_dict(),
         "toolchain_name_prefix": attr.string(),
     },
     implementation = _rust_toolchain_repository_impl,
@@ -327,7 +317,7 @@ rust_toolchain_repository_proxy = repository_rule(
     implementation = _rust_toolchain_repository_proxy_impl,
 )
 
-def rust_repository_set(name, version, exec_triple, extra_target_triples, target_triples_to_linker = {}, iso_date = None):
+def rust_repository_set(name, version, exec_triple, extra_target_triples, iso_date = None):
     """Assembles a remote repository for the given toolchain params, produces a proxy repository
     to contain the toolchain declaration, and registers the toolchains.
 
@@ -339,7 +329,6 @@ def rust_repository_set(name, version, exec_triple, extra_target_triples, target
       version: The version of the tool among "nightly", "beta', or an exact version.
       iso_date: The date of the tool (or None, if the version is a specific version).
       exec_triple: The Rust-style target that this compiler runs on
-      target_triples_to_linker: A mapping from target triple to workspace path to a linker binary
       extra_target_triples: Additional rust-style targets that this set of toolchains
                             should support.
     """
@@ -349,7 +338,6 @@ def rust_repository_set(name, version, exec_triple, extra_target_triples, target
         exec_triple = exec_triple,
         extra_target_triples = extra_target_triples,
         iso_date = iso_date,
-        target_triples_to_linker = target_triples_to_linker,
         toolchain_name_prefix = DEFAULT_TOOLCHAIN_NAME_PREFIX,
         version = version,
     )
@@ -387,9 +375,6 @@ def rust_repositories():
             # TODO(acmcarther): DO_NOT_SUBMIT: Remove
             "arm-unknown-linux-gnueabi",
         ],
-        target_triples_to_linker = {
-            "arm-unknown-linux-gnueabi": "@arm_linux_gnueabi_gcc//:arm-linux-gnueabi-gcc",
-        },
         version = "1.26.1",
     )
 

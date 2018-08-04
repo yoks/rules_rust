@@ -53,9 +53,6 @@ def build_rustc_command(
     cc = cpp_fragment.compiler_executable
     ar = cpp_fragment.ar_executable
 
-    if toolchain.linker:
-        cc = _get_first_file(toolchain.linker).path
-
     # Currently, the CROSSTOOL config for darwin sets ar to "libtool". Because
     # rust uses ar-specific flags, use /usr/bin/ar in this case.
     # TODO(dzc): This is not ideal. Remove this workaround once ar_executable
@@ -238,7 +235,6 @@ def _rust_toolchain_impl(ctx):
         dylib_ext = ctx.attr.dylib_ext,
         os = ctx.attr.os,
         target_triple = ctx.attr.target_triple,
-        linker = ctx.attr.linker,
         compilation_mode_opts = compilation_mode_opts,
         crosstool_files = ctx.files._crosstool,
     )
@@ -254,9 +250,6 @@ rust_toolchain = rule(
         "staticlib_ext": attr.string(mandatory = True),
         "dylib_ext": attr.string(mandatory = True),
         "os": attr.string(mandatory = True),
-        "linker": attr.label(
-            allow_single_file = True,
-        ),
         "target_triple": attr.string(mandatory = True),
         "_crosstool": attr.label(
             default = Label("//tools/defaults:crosstool"),
