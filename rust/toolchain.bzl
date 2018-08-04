@@ -250,6 +250,7 @@ rust_toolchain = rule(
         "staticlib_ext": attr.string(mandatory = True),
         "dylib_ext": attr.string(mandatory = True),
         "os": attr.string(mandatory = True),
+        "exec_triple": attr.string(),
         "target_triple": attr.string(mandatory = True),
         "_crosstool": attr.label(
             default = Label("//tools/defaults:crosstool"),

@@ -95,6 +95,7 @@ rust_toolchain(
     staticlib_ext = "{staticlib_ext}",
     dylib_ext = "{dylib_ext}",
     os = "{system}",
+    exec_triple = "{exec_triple}",
     target_triple = "{target_triple}",
     visibility = ["//visibility:public"],
 )
@@ -104,6 +105,7 @@ rust_toolchain(
         staticlib_ext = system_to_staticlib_ext(system),
         dylib_ext = system_to_dylib_ext(system),
         system = system,
+        exec_triple = exec_triple,
         target_triple = target_triple,
     )
 
