@@ -316,7 +316,7 @@ def _compute_rpaths(toolchain, output_dir, depinfo):
 
     # Multiple dylibs can be present in the same directory, so deduplicate them.
     return depset([
-        "$ORIGIN/" + relative_path(output_dir, lib_dir)
+        relative_path(output_dir, lib_dir)
         for lib_dir in _get_dir_names(depinfo.transitive_dylibs)
     ])
 
