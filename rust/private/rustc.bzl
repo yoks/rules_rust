@@ -23,6 +23,7 @@ load(
     "find_cpp_toolchain",
 )
 load("@bazel_skylib//lib:versions.bzl", "versions")
+load("@bazel_version//:def.bzl", "BAZEL_VERSION")
 
 CrateInfo = provider(
     fields = {
@@ -190,7 +191,7 @@ def rustc_compile_action(
 
     rpaths = _compute_rpaths(toolchain, output_dir, depinfo)
 
-    current_bazel_version = versions.get()
+    current_bazel_version = versions.parse(BAZEL_VERSION)
     minimal_bazel_version = versions.parse("0.18.0")
     if not hasattr(ctx.fragments.cpp, "linkopts"):
         fail("Bazel is too old, please use at least Bazel 0.18.0")
