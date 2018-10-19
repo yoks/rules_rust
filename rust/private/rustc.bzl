@@ -13,6 +13,15 @@
 # limitations under the License.
 
 load(":private/utils.bzl", "find_toolchain", "relative_path")
+load(
+    "@bazel_tools//tools/build_defs/cc:action_names.bzl",
+    "CPP_LINK_EXECUTABLE_ACTION_NAME",
+    "CPP_LINK_STATIC_LIBRARY_ACTION_NAME",
+)
+load(
+    "@bazel_tools//tools/cpp:toolchain_utils.bzl",
+    "find_cpp_toolchain",
+)
 
 CrateInfo = provider(
     fields = {
@@ -178,10 +187,36 @@ def rustc_compile_action(
     if ctx.file.out_dir_tar:
         compile_inputs.append(ctx.file.out_dir_tar)
 
+    rpaths = _compute_rpaths(toolchain, output_dir, depinfo)
+
     # Paths to cc (for linker) and ar
     cpp_fragment = ctx.host_fragments.cpp
-    cc = cpp_fragment.compiler_executable
-    ar = cpp_fragment.ar_executable
+    cc_toolchain = find_cpp_toolchain(ctx)
+    feature_configuration = cc_common.configure_features(
+        cc_toolchain = cc_toolchain,
+        requested_features = ctx.features,
+        unsupported_features = ctx.disabled_features,
+    )
+    ld = cc_common.get_tool_for_action(
+        feature_configuration = feature_configuration,
+        action_name = CPP_LINK_EXECUTABLE_ACTION_NAME,
+    )
+    ar = cc_common.get_tool_for_action(
+        feature_configuration = feature_configuration,
+        action_name = CPP_LINK_STATIC_LIBRARY_ACTION_NAME,
+    )
+    link_variables = cc_common.create_link_variables(
+        feature_configuration = feature_configuration,
+        cc_toolchain = cc_toolchain,
+        is_linking_dynamic_library = False,
+        runtime_library_search_directories = rpaths,
+        user_link_flags = ctx.fragments.cpp.linkopts,
+    )
+    link_options = cc_common.get_memory_inefficient_command_line(
+        feature_configuration = feature_configuration,
+        action_name = CPP_LINK_EXECUTABLE_ACTION_NAME,
+        variables = link_variables,
+    )
 
     # Currently, the CROSSTOOL config for darwin sets ar to "libtool". Because
     # rust uses ar-specific flags, use /usr/bin/ar in this case.
@@ -190,8 +225,6 @@ def rustc_compile_action(
     ar_str = "%s" % ar
     if ar_str.find("libtool", 0) != -1:
         ar = "/usr/bin/ar"
-
-    rpaths = _compute_rpaths(toolchain, output_dir, depinfo)
 
     # Construct features flags
     features_flags = _get_features_flags(ctx.attr.crate_features)
@@ -223,14 +256,13 @@ def rustc_compile_action(
             "--codegen metadata=%s" % extra_filename,
             "--codegen extra-filename='%s'" % extra_filename,
             "--codegen ar=%s" % ar,
-            "--codegen linker=%s" % cc,
-            "--codegen link-args='%s'" % " ".join(cpp_fragment.link_options),
+            "--codegen linker=%s" % ld,
+            "--codegen link-args='%s'" % " ".join(link_options),
             "--out-dir",
             output_dir,
             "--emit=dep-info,link",
             "--color always",
         ] +
-        ["--codegen link-arg='-Wl,-rpath={}'".format(rpath) for rpath in rpaths] +
         features_flags +
         rust_flags +
         depinfo.link_search_flags +
@@ -266,7 +298,7 @@ def _compute_rpaths(toolchain, output_dir, depinfo):
     for runtime linking of shared libraries.
     """
     if not depinfo.transitive_dylibs:
-        return []
+        return depset([])
     if toolchain.os != "linux":
         fail("Runtime linking is not supported on {}, but found {}".format(
             toolchain.os,
@@ -274,10 +306,10 @@ def _compute_rpaths(toolchain, output_dir, depinfo):
         ))
 
     # Multiple dylibs can be present in the same directory, so deduplicate them.
-    return [
+    return depset([
         "$ORIGIN/" + relative_path(output_dir, lib_dir)
         for lib_dir in _get_dir_names(depinfo.transitive_dylibs)
-    ]
+    ])
 
 def _get_features_flags(features):
     """
