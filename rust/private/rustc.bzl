@@ -22,6 +22,7 @@ load(
     "@bazel_tools//tools/cpp:toolchain_utils.bzl",
     "find_cpp_toolchain",
 )
+load("@bazel_skylib//lib:versions.bzl", "versions")
 
 CrateInfo = provider(
     fields = {
@@ -189,6 +190,13 @@ def rustc_compile_action(
 
     rpaths = _compute_rpaths(toolchain, output_dir, depinfo)
 
+    if not hasattr(ctx.fragments.cpp, "linkopts"):
+        fail("Bazel is too old, please use at least Bazel 0.18.0")
+    elif versions.is_at_least("0.18.0"):
+        user_link_flags = ctx.fragments.cpp.linkopts
+    else:
+        user_link_flags = depset(ctx.fragments.cpp.linkopts)
+
     # Paths to cc (for linker) and ar
     cpp_fragment = ctx.host_fragments.cpp
     cc_toolchain = find_cpp_toolchain(ctx)
@@ -210,7 +218,7 @@ def rustc_compile_action(
         cc_toolchain = cc_toolchain,
         is_linking_dynamic_library = False,
         runtime_library_search_directories = rpaths,
-        user_link_flags = ctx.fragments.cpp.linkopts,
+        user_link_flags = user_link_flags,
     )
     link_options = cc_common.get_memory_inefficient_command_line(
         feature_configuration = feature_configuration,

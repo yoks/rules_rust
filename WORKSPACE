@@ -60,6 +60,9 @@ http_archive(
     ],
 )
 
-load("//util:check_bazel_version.bzl", "check_bazel_version")
-
-check_bazel_version("0.18.0")
+http_archive(
+    name = "bazel_skylib",
+    url = "https://github.com/bazelbuild/bazel-skylib/archive/0.5.0.tar.gz",
+    sha256 = "b5f6abe419da897b7901f90cbab08af958b97a8f3575b0d3dd062ac7ce78541f",
+    strip_prefix = "bazel-skylib-0.5.0"
+)
