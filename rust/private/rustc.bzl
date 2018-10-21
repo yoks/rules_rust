@@ -16,7 +16,6 @@ load(":private/utils.bzl", "find_toolchain", "relative_path")
 load(
     "@bazel_tools//tools/build_defs/cc:action_names.bzl",
     "CPP_LINK_EXECUTABLE_ACTION_NAME",
-    "CPP_LINK_STATIC_LIBRARY_ACTION_NAME",
 )
 load(
     "@bazel_tools//tools/cpp:toolchain_utils.bzl",
@@ -191,9 +190,7 @@ def rustc_compile_action(
 
     rpaths = _compute_rpaths(toolchain, output_dir, depinfo)
 
-    if not hasattr(ctx.fragments.cpp, "linkopts"):
-        fail("Bazel is too old, please use at least Bazel 0.18.0")
-    elif versions.is_at_least("0.18.0", BAZEL_VERSION):
+    if versions.is_at_least("0.18.0", BAZEL_VERSION):
         user_link_flags = ctx.fragments.cpp.linkopts
     else:
         user_link_flags = depset(ctx.fragments.cpp.linkopts)
@@ -210,10 +207,6 @@ def rustc_compile_action(
         feature_configuration = feature_configuration,
         action_name = CPP_LINK_EXECUTABLE_ACTION_NAME,
     )
-    ar = cc_common.get_tool_for_action(
-        feature_configuration = feature_configuration,
-        action_name = CPP_LINK_STATIC_LIBRARY_ACTION_NAME,
-    )
     link_variables = cc_common.create_link_variables(
         feature_configuration = feature_configuration,
         cc_toolchain = cc_toolchain,
@@ -226,14 +219,6 @@ def rustc_compile_action(
         action_name = CPP_LINK_EXECUTABLE_ACTION_NAME,
         variables = link_variables,
     )
-
-    # Currently, the CROSSTOOL config for darwin sets ar to "libtool". Because
-    # rust uses ar-specific flags, use /usr/bin/ar in this case.
-    # TODO(dzc): This is not ideal. Remove this workaround once ar_executable
-    # always points to an ar binary.
-    ar_str = "%s" % ar
-    if ar_str.find("libtool", 0) != -1:
-        ar = "/usr/bin/ar"
 
     # Construct features flags
     features_flags = _get_features_flags(ctx.attr.crate_features)
@@ -264,7 +249,6 @@ def rustc_compile_action(
             # Mangle symbols to disambiguate crates with the same name
             "--codegen metadata=%s" % extra_filename,
             "--codegen extra-filename='%s'" % extra_filename,
-            "--codegen ar=%s" % ar,
             "--codegen linker=%s" % ld,
             "--codegen link-args='%s'" % " ".join(link_options),
             "--out-dir",
