@@ -251,10 +251,12 @@ def rustc_compile_action(
             "--codegen extra-filename='%s'" % extra_filename,
             "--codegen linker=%s" % ld,
             "--codegen link-args='%s'" % " ".join(link_options),
+            "--remap-path-prefix {}={}".format("$(pwd)", "__bazel_redacted_pwd"),
             "--out-dir",
             output_dir,
             "--emit=dep-info,link",
             "--color always",
+            "--target=" + toolchain.target_triple,
         ] +
         features_flags +
         rust_flags +
