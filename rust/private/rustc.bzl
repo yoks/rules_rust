@@ -52,8 +52,9 @@ def _get_rustc_env(ctx, crate_info):
         "CARGO_PKG_NAME=" + ctx.label.name,
         "CARGO_PKG_DESCRIPTION=",
         "CARGO_PKG_HOMEPAGE=",
-        # N.B. Manifest not guaranteed to actually be present.
-        "CARGO_MANIFEST_DIR=" + crate_info.root.path,
+        # N.B. Manifest not guaranteed to actually be present, but `data` and 
+        # `out_dir_tar` files will be present.
+        "CARGO_MANIFEST_DIR=" + crate_info.output.dirname,
     ]
 
 def _get_compilation_mode_opts(ctx, toolchain):
