@@ -35,7 +35,7 @@ CrateInfo = provider(
     },
 )
 
-def _get_rustc_env(ctx):
+def _get_rustc_env(ctx, crate_info):
     version = ctx.attr.version if hasattr(ctx.attr, "version") else "0.0.0"
     major, minor, patch = version.split(".", 2)
     if "-" in patch:
@@ -52,6 +52,8 @@ def _get_rustc_env(ctx):
         "CARGO_PKG_NAME=" + ctx.label.name,
         "CARGO_PKG_DESCRIPTION=",
         "CARGO_PKG_HOMEPAGE=",
+        # N.B. Manifest not guaranteed to actually be present.
+        "CARGO_MANIFEST_DIR=" + crate_info.root.path,
     ]
 
 def _get_compilation_mode_opts(ctx, toolchain):
@@ -236,7 +238,7 @@ def rustc_compile_action(
         ['if [ ! -z "${TMPDIR+x}" ]; then mkdir -p $TMPDIR; fi;'] +
         depinfo.setup_cmd +
         _out_dir_setup_cmd(ctx.file.out_dir_tar) +
-        _get_rustc_env(ctx) +
+        _get_rustc_env(ctx, crate_info) +
         [
             "OUT_DIR=$(pwd)/out_dir",
             toolchain.rustc.path,
