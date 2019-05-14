@@ -140,20 +140,17 @@ def _get_linker_and_args(ctx, rpaths):
         user_link_flags = depset(ctx.fragments.cpp.linkopts)
 
     cc_toolchain = find_cpp_toolchain(ctx)
-    if (len(BAZEL_VERSION) == 0 or
-        versions.is_at_least("0.25.0", BAZEL_VERSION)):
-        feature_configuration = cc_common.configure_features(
-            ctx = ctx,
-            cc_toolchain = cc_toolchain,
-            requested_features = ctx.features,
-            unsupported_features = ctx.disabled_features,
-        )
-    else:
-        feature_configuration = cc_common.configure_features(
-            cc_toolchain = cc_toolchain,
-            requested_features = ctx.features,
-            unsupported_features = ctx.disabled_features,
-        )
+    kwargs = {
+        "ctx": ctx,
+    } if len(BAZEL_VERSION) == 0 or versions.is_at_least(
+        "0.25.0", BAZEL_VERSION
+    ) else None
+    feature_configuration = cc_common.configure_features(
+        cc_toolchain = cc_toolchain,
+        requested_features = ctx.features,
+        unsupported_features = ctx.disabled_features,
+        **kwargs
+    )
     link_variables = cc_common.create_link_variables(
         feature_configuration = feature_configuration,
         cc_toolchain = cc_toolchain,
