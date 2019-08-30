@@ -44,8 +44,8 @@ rust_bindgen_repositories()
 # Stardoc and its dependencies
 http_archive(
     name = "io_bazel_skydoc",
-    url = "https://github.com/bazelbuild/skydoc/archive/c7bbde2950769aac9a99364b0926230060a3ce04.zip",
-    strip_prefix = "skydoc-c7bbde2950769aac9a99364b0926230060a3ce04",
+    url = "https://github.com/bazelbuild/skydoc/archive/cca509af50a0776a4ed745575534b38bd131753c.zip",
+    strip_prefix = "skydoc-cca509af50a0776a4ed745575534b38bd131753c",
 )
 
 load("@io_bazel_skydoc//:setup.bzl", "skydoc_repositories")
