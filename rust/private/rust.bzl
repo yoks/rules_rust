@@ -130,6 +130,11 @@ def _rust_library_impl(ctx):
 def _rust_binary_impl(ctx):
     toolchain = find_toolchain(ctx)
 
+    if (toolchain.target_arch == "wasm32"):
+        output = ctx.actions.declare_file(ctx.label.name + ".wasm")
+    else:
+        output = ctx.actions.declare_file(ctx.label.name)
+
     return rustc_compile_action(
         ctx = ctx,
         toolchain = toolchain,
@@ -140,7 +145,7 @@ def _rust_binary_impl(ctx):
             srcs = ctx.files.srcs,
             deps = ctx.attr.deps,
             aliases = ctx.attr.aliases,
-            output = ctx.outputs.executable,
+            output = output,
             edition = _get_edition(ctx, toolchain),
         ),
     )
