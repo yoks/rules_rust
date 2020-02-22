@@ -331,9 +331,6 @@ _rust_library_attrs = {
         """),
         default = "rlib",
     ),
-    "_whitelist_function_transition": attr.label(
-        default = "//tools/whitelists/function_transition_whitelist",
-    ),
 }
 
 _rust_test_attrs = {
@@ -354,7 +351,6 @@ rust_library = rule(
                  _rust_library_attrs.items()),
     fragments = ["cpp"],
     host_fragments = ["cpp"],
-    cfg = proc_macro_host_transition,
     toolchains = [
         "@io_bazel_rules_rust//rust:toolchain",
         "@bazel_tools//tools/cpp:toolchain_type",
