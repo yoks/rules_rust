@@ -177,6 +177,7 @@ def raze_fetch_remote_crates():
         name = "raze__grpc_compiler__0_6_2",
         url = "https://crates-io.s3-us-west-1.amazonaws.com/crates/grpc-compiler/grpc-compiler-0.6.2.crate",
         type = "tar.gz",
+        sha256 = "907274ce8ee7b40a0d0b0db09022ea22846a47cfb1fc8ad2c983c70001b4ffb1",
         strip_prefix = "grpc-compiler-0.6.2",
         build_file = Label("//proto/raze/remote:grpc-compiler-0.6.2.BUILD"),
     )
@@ -448,6 +449,7 @@ def raze_fetch_remote_crates():
         name = "raze__tls_api__0_2_1",
         url = "https://crates-io.s3-us-west-1.amazonaws.com/crates/tls-api/tls-api-0.2.1.crate",
         type = "tar.gz",
+        sha256 = "3e15c6068100102facee1f30ab43e4a9feb6f5bdbe1888e27e2265f3827ea4d5",
         strip_prefix = "tls-api-0.2.1",
         build_file = Label("//proto/raze/remote:tls-api-0.2.1.BUILD"),
     )
@@ -456,6 +458,7 @@ def raze_fetch_remote_crates():
         name = "raze__tls_api_stub__0_2_1",
         url = "https://crates-io.s3-us-west-1.amazonaws.com/crates/tls-api-stub/tls-api-stub-0.2.1.crate",
         type = "tar.gz",
+        sha256 = "4a12d2d36ac4b0a2f7d6a0ee39a2beef5304f01e4955f4b34097c2c547e06c21",
         strip_prefix = "tls-api-stub-0.2.1",
         build_file = Label("//proto/raze/remote:tls-api-stub-0.2.1.BUILD"),
     )
