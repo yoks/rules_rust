@@ -268,7 +268,7 @@ def load_arbitrary_tool(ctx, tool_name, tool_subdirectories, version, iso_date, 
       tool_name: The name of the given tool per the archive naming.
       param_prefix: The name of the versioning param if the repository rule supports multiple tools.
       tool_subdirectories: The subdirectories of the tool files (at a level below the root directory of
-                           the archive). The root directory of the archive is expected to match
+                           the archive. The root directory of the archive is expected to match
                            $TOOL_NAME-$VERSION-$TARGET_TRIPLE.
                            Example:
                               tool_name
