@@ -13,6 +13,11 @@ local_repository(
 )
 
 local_repository(
+    name = "clippy",
+    path = "test/clippy",
+)
+
+local_repository(
     name = "docs",
     path = "docs",
 )
@@ -99,3 +104,15 @@ rbe_autoconfig(
 
 load("@io_bazel_rules_rust//:workspace.bzl", "bazel_version")
 bazel_version(name = "bazel_version")
+
+http_archive(
+    name = "build_bazel_integration_testing",
+    url = "https://github.com/bazelbuild/bazel-integration-testing/archive/165440b2dbda885f8d1ccb8d0f417e6cf8c54f17.zip",
+    type = "zip",
+    strip_prefix= "bazel-integration-testing-165440b2dbda885f8d1ccb8d0f417e6cf8c54f17",
+    sha256 = "2401b1369ef44cc42f91dc94443ef491208dbd06da1e1e10b702d8c189f098e3",
+)
+
+load("@build_bazel_integration_testing//tools:repositories.bzl", "bazel_binaries")
+# Depend on the Bazel binaries, also accepts an array of versions
+bazel_binaries()
