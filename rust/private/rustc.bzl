@@ -563,6 +563,7 @@ def _create_extra_input_args(ctx, file, build_info, dep_info):
 
     # Arguments to the commandline line wrapper that are going to be used
     # to create the final command line
+    tar_file_attr = getattr(file, "out_dir_tar", None)
     out_dir = None
     build_env_file = None
     build_flags_files = []
@@ -572,6 +573,12 @@ def _create_extra_input_args(ctx, file, build_info, dep_info):
         build_env_file = build_info.rustc_env.path
         # out_dir will be added as input by the transitive_build_infos loop below.
         build_flags_files.append(build_info.flags.path)
+    elif tar_file_attr:
+        out_dir = ".out-dir"
+        prep_commands.append("mkdir -p $OUT_DIR")
+        prep_commands.append("tar -xzf {tar} -C $OUT_DIR".format(tar=tar_file_attr.path))
+        input_files.append(tar_file_attr)
+        dynamic_env["OUT_DIR"] = "${{EXEC_ROOT}}/{}".format(out_dir)
 
     # This should probably only actually be exposed to actions which link.
     for dep_build_info in dep_info.transitive_build_infos.to_list():
