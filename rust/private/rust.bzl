@@ -21,7 +21,7 @@ def _determine_output_hash(lib_rs):
     return repr(hash(lib_rs.path))
 
 def _deprecated_attributes(ctx):
-    if getattr(ctx.attr, "out_dir_tar", None):
+    if getattr(ctx.attr, "out_dir_tar_", None):
         fail(ctx, "".join([
             "`out_dir_tar` is no longer supported, please use cargo/cargo_build_script.bzl ",
             "instead. If you used `cargo raze`, please use version 0.3.3 or later.",
