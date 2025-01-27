@@ -150,7 +150,7 @@ impl Default for CommonAttributes {
             compile_data: Default::default(),
             // Generated targets include all files in their package by default
             compile_data_glob: BTreeSet::from(["**".to_owned()]),
-            compile_data_glob_excludes: BTreeSet::from(["**/*.rs".to_owned()]),
+            compile_data_glob_excludes: Default::default(),
             crate_features: Default::default(),
             data: Default::default(),
             data_glob: Default::default(),
@@ -261,7 +261,7 @@ impl Default for BuildScriptAttributes {
             // The build script itself also has access to all
             // source files by default.
             compile_data_glob: BTreeSet::from(["**".to_owned()]),
-            compile_data_glob_excludes: BTreeSet::from(["**/*.rs".to_owned()]),
+            compile_data_glob_excludes: Default::default(),
             data: Default::default(),
             // Build scripts include all sources by default
             data_glob: BTreeSet::from(["**".to_owned()]),
@@ -580,6 +580,7 @@ impl CrateContext {
                 self.common_attrs.compile_data_glob.extend(extra.clone());
             }
 
+            // Compile data glob excludes
             if let Some(extra) = &crate_extra.compile_data_glob_excludes {
                 self.common_attrs
                     .compile_data_glob_excludes
