@@ -581,7 +581,9 @@ impl CrateContext {
             }
 
             if let Some(extra) = &crate_extra.compile_data_glob_excludes {
-                self.common_attrs.compile_data_glob_excludes.extend(extra.clone());
+                self.common_attrs
+                    .compile_data_glob_excludes
+                    .extend(extra.clone());
             }
 
             // Crate features
