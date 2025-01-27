@@ -519,7 +519,10 @@ impl CrateAnnotations {
         default(&mut self.deps, deps);
         default(&mut self.compile_data, compile_data);
         default(&mut self.compile_data_glob, compile_data_glob);
-        default(&mut self.compile_data_glob_excludes, compile_data_glob_excludes);
+        default(
+            &mut self.compile_data_glob_excludes,
+            compile_data_glob_excludes,
+        );
         default(&mut self.rustc_env, rustc_env);
         default(&mut self.rustc_env_files, rustc_env_files);
         default(&mut self.rustc_flags, rustc_flags);
