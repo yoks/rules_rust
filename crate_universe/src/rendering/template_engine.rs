@@ -245,13 +245,13 @@ fn crate_label_fn_generator(template: String, repository_name: String) -> impl t
             let version = parse_tera_param!("version", String, args);
             let target = parse_tera_param!("target", String, args);
 
-            match to_value(sanitize_repository_name(&render_crate_bazel_label(
+            match to_value(&render_crate_bazel_label(
                 &template,
                 &repository_name,
                 &name,
                 &version,
                 &target,
-            ))) {
+            )) {
                 Ok(v) => Ok(v),
                 Err(_) => Err(tera::Error::msg("Failed to generate crate's label")),
             }
@@ -267,13 +267,13 @@ fn crate_alias_fn_generator(template: String, repository_name: String) -> impl t
             let version = parse_tera_param!("version", String, args);
             let target = parse_tera_param!("target", String, args);
 
-            match to_value(sanitize_repository_name(&render_crate_bazel_label(
+            match to_value(&render_crate_bazel_label(
                 &template,
                 &repository_name,
                 &name,
                 &version,
                 &target,
-            ))) {
+            )) {
                 Ok(v) => Ok(v),
                 Err(_) => Err(tera::Error::msg("Failed to generate crate's label")),
             }
@@ -288,12 +288,12 @@ fn crate_repository_fn_generator(template: String, repository_name: String) -> i
             let name = parse_tera_param!("name", String, args);
             let version = parse_tera_param!("version", String, args);
 
-            match to_value(sanitize_repository_name(&render_crate_bazel_repository(
+            match to_value(&render_crate_bazel_repository(
                 &template,
                 &repository_name,
                 &name,
                 &version,
-            ))) {
+            )) {
                 Ok(v) => Ok(v),
                 Err(_) => Err(tera::Error::msg("Failed to generate crate repository name")),
             }
