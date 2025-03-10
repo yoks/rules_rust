@@ -163,6 +163,8 @@ impl Digest {
             OsStr::new("HOME"),
             OsStr::new("HOMEDRIVE"),
             OsStr::new("PATHEXT"),
+            OsStr::new("NIX_LD"),
+            OsStr::new("NIX_LD_LIBRARY_PATH"),
         ];
         let env = std::env::vars_os().filter(|(var, _)| safe_vars.contains(&var.as_os_str()));
 
@@ -290,7 +292,7 @@ mod test {
         );
 
         assert_eq!(
-            Digest("28544902e61c6a90d6feb49eb73b3ec5a46688a27ca0193094e56f799561b42f".to_owned()),
+            Digest("d4899058bbb3a94af5f09c1d029bb6b7f152bd9a580a10563ac5211a842d1169".to_owned()),
             digest,
         );
     }
