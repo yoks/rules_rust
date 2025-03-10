@@ -1,5 +1,5 @@
 {
-  "checksum": "d4472e64495539ec70c638764541f50a93e8dfd20baa4c57ce33ffe855ac2671",
+  "checksum": "037157afd4d760a9eb5f8c9866c7d176e1b4c237de0b1baf058beee867d4d64c",
   "crates": {
     "autocfg 1.1.0": {
       "name": "autocfg",
@@ -230,6 +230,9 @@
         "compile_data_glob": [
           "**"
         ],
+        "compile_data_glob_excludes": [
+          "**/*.rs"
+        ],
         "data_glob": [
           "**"
         ]
@@ -309,6 +312,9 @@
       "build_script_attrs": {
         "compile_data_glob": [
           "**"
+        ],
+        "compile_data_glob_excludes": [
+          "**/*.rs"
         ],
         "data_glob": [
           "**"

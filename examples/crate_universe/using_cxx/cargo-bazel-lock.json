@@ -1,5 +1,5 @@
 {
-  "checksum": "28eee053bbec296564741eec0badde8f68ad96eff32f62f5cbb2365726229596",
+  "checksum": "b089224c6dd517eb0db40d9d557bc42f38cfbfad64cdd6902660a4b3c498ab6b",
   "crates": {
     "cc 1.0.82": {
       "name": "cc",
@@ -379,6 +379,9 @@
         "compile_data_glob": [
           "**"
         ],
+        "compile_data_glob_excludes": [
+          "**/*.rs"
+        ],
         "data_glob": [
           "**"
         ]
@@ -458,6 +461,9 @@
       "build_script_attrs": {
         "compile_data_glob": [
           "**"
+        ],
+        "compile_data_glob_excludes": [
+          "**/*.rs"
         ],
         "data_glob": [
           "**"
@@ -565,6 +571,9 @@
       "build_script_attrs": {
         "compile_data_glob": [
           "**"
+        ],
+        "compile_data_glob_excludes": [
+          "**/*.rs"
         ],
         "data_glob": [
           "**"

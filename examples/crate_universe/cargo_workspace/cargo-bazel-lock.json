@@ -1,5 +1,5 @@
 {
-  "checksum": "a3467ed367ac0add0df322b91acb6c5dafb2a198027530004a1004124161c28c",
+  "checksum": "6009e9bc5683eaf806c0fde779f9f265a0c62ca33b123e71002f73ac14579785",
   "crates": {
     "ansi_term 0.12.1": {
       "name": "ansi_term",
@@ -585,6 +585,9 @@
         "compile_data_glob": [
           "**"
         ],
+        "compile_data_glob_excludes": [
+          "**/*.rs"
+        ],
         "data_glob": [
           "**"
         ]
@@ -712,6 +715,9 @@
       "build_script_attrs": {
         "compile_data_glob": [
           "**"
+        ],
+        "compile_data_glob_excludes": [
+          "**/*.rs"
         ],
         "data_glob": [
           "**"
@@ -1706,6 +1712,9 @@
         "compile_data_glob": [
           "**"
         ],
+        "compile_data_glob_excludes": [
+          "**/*.rs"
+        ],
         "data_glob": [
           "**"
         ]
@@ -1780,6 +1789,9 @@
         "compile_data_glob": [
           "**"
         ],
+        "compile_data_glob_excludes": [
+          "**/*.rs"
+        ],
         "data_glob": [
           "**"
         ]
@@ -1853,6 +1865,9 @@
       "build_script_attrs": {
         "compile_data_glob": [
           "**"
+        ],
+        "compile_data_glob_excludes": [
+          "**/*.rs"
         ],
         "data_glob": [
           "**"
