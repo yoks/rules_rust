@@ -261,7 +261,7 @@ impl Default for BuildScriptAttributes {
             // The build script itself also has access to all
             // source files by default.
             compile_data_glob: BTreeSet::from(["**".to_owned()]),
-            compile_data_glob_excludes: Default::default(),
+            compile_data_glob_excludes: BTreeSet::from(["**/*.rs".to_owned()]),
             data: Default::default(),
             // Build scripts include all sources by default
             data_glob: BTreeSet::from(["**".to_owned()]),
